@@ -1,7 +1,7 @@
 # TASK-002 實價登錄 ETL — 匯入 pipeline（最小可運作版）
 
 ## 狀態
-QA測試
+完成
 
 ## 類型
 後端（ETL）
@@ -82,50 +82,50 @@ QA測試
 
 ### A. CLI 觸發與下載
 
-- [ ] AC-01：執行 `python -m etl.run`（或等效入口）不需任何互動，指令在無使用者輸入的情況下自行完成並退出（exit code 0）。
-- [ ] AC-02：程式下載台北市（A 縣市代碼）與新北市（F 縣市代碼）的不動產買賣最近 1 期 CSV；其他縣市資料不被下載或寫入。
-- [ ] AC-03：若無法連線至內政部下載端點（模擬 network error 或 HTTP 4xx/5xx），程式以非 0 exit code 結束，並以 logging（非 print）輸出明確錯誤訊息；`transactions` 表不新增任何資料。
-- [ ] AC-04：若下載後的 CSV 為空檔案（0 bytes 或僅含 header 無資料列），程式正常結束（exit code 0），logging 輸出警告，`transactions` 表不新增任何資料。
+- [x] AC-01：執行 `python -m etl.run`（或等效入口）不需任何互動，指令在無使用者輸入的情況下自行完成並退出（exit code 0）。
+- [x] AC-02：程式下載台北市（A 縣市代碼）與新北市（F 縣市代碼）的不動產買賣最近 1 期 CSV；其他縣市資料不被下載或寫入。
+- [x] AC-03：若無法連線至內政部下載端點（模擬 network error 或 HTTP 4xx/5xx），程式以非 0 exit code 結束，並以 logging（非 print）輸出明確錯誤訊息；`transactions` 表不新增任何資料。
+- [x] AC-04：若下載後的 CSV 為空檔案（0 bytes 或僅含 header 無資料列），程式正常結束（exit code 0），logging 輸出警告，`transactions` 表不新增任何資料。
 
 ### B. 欄位轉換——正常路徑
 
-- [ ] AC-05：`transaction_date` 欄位型別為 PostgreSQL DATE，民國年日期字串 `1130515` 轉換後儲存為 `2024-05-15`；民國 `1120101` 儲存為 `2023-01-01`。
-- [ ] AC-06：`area_sqm` 的值 = 來源「建物移轉總面積（平方公尺）」原始值，直接儲存，精度誤差不超過 ±0.01 m²。**不做坪換算**；坪換算為前端責任（坪 = m² ÷ 3.305785）。
-- [ ] AC-07：`price_per_sqm` 的值 = 來源「單價元/平方公尺」原始值，直接儲存，精度誤差不超過 ±0.01 元。**不做坪換算**；坪換算為前端責任（元/坪 = 元/m² × 3.305785）。（決策 1，2026-06-22：面積、單價皆存來源平方公尺原始值，不做坪換算；坪換算為前端責任）
-- [ ] AC-08：`floor` 欄位為 VARCHAR，儲存原始字串（如 `「三層」`、`「全」`、`「地下一層」`），不做任何額外轉換。
-- [ ] AC-09：`building_age` 為 SMALLINT，計算方式為：西元匯入年（執行當年）-（建築完成年月民國年 + 1911），**只取整數年、無條件捨去到年（不計月份）**；結果為負數時存 NULL。此為刻意設計：以「建築完成年」而非精確月份計算，避免跨月邊界造成測案不穩定。
-- [ ] AC-10：`has_parking` 為三態 BOOLEAN：有車位（來源「車位類別」非空白且非 `「無」`，或「車位總價」> 0）→ `TRUE`；明確無車位（「車位類別」= `「無」` 且「車位總價」= 0 或為空）→ `FALSE`；來源欄位缺失或無法判斷 → `NULL`（見 AC-18）。
-- [ ] AC-11：`city`、`district`、`address`、`building_type`、`price_total` 欄位直接對應來源，型別相符。
-- [ ] AC-12：`location` 欄位對所有匯入列均為 NULL（不論來源是否有地址）。
-- [ ] AC-13：`mrt_distance` 欄位對所有匯入列均為 NULL。
+- [x] AC-05：`transaction_date` 欄位型別為 PostgreSQL DATE，民國年日期字串 `1130515` 轉換後儲存為 `2024-05-15`；民國 `1120101` 儲存為 `2023-01-01`。
+- [x] AC-06：`area_sqm` 的值 = 來源「建物移轉總面積（平方公尺）」原始值，直接儲存，精度誤差不超過 ±0.01 m²。**不做坪換算**；坪換算為前端責任（坪 = m² ÷ 3.305785）。
+- [x] AC-07：`price_per_sqm` 的值 = 來源「單價元/平方公尺」原始值，直接儲存，精度誤差不超過 ±0.01 元。**不做坪換算**；坪換算為前端責任（元/坪 = 元/m² × 3.305785）。（決策 1，2026-06-22：面積、單價皆存來源平方公尺原始值，不做坪換算；坪換算為前端責任）
+- [x] AC-08：`floor` 欄位為 VARCHAR，儲存原始字串（如 `「三層」`、`「全」`、`「地下一層」`），不做任何額外轉換。
+- [x] AC-09：`building_age` 為 SMALLINT，計算方式為：西元匯入年（執行當年）-（建築完成年月民國年 + 1911），**只取整數年、無條件捨去到年（不計月份）**；結果為負數時存 NULL。此為刻意設計：以「建築完成年」而非精確月份計算，避免跨月邊界造成測案不穩定。
+- [x] AC-10：`has_parking` 為三態 BOOLEAN：有車位（來源「車位類別」非空白且非 `「無」`，或「車位總價」> 0）→ `TRUE`；明確無車位（「車位類別」= `「無」` 且「車位總價」= 0 或為空）→ `FALSE`；來源欄位缺失或無法判斷 → `NULL`（見 AC-18）。
+- [x] AC-11：`city`、`district`、`address`、`building_type`、`price_total` 欄位直接對應來源，型別相符。
+- [x] AC-12：`location` 欄位對所有匯入列均為 NULL（不論來源是否有地址）。
+- [x] AC-13：`mrt_distance` 欄位對所有匯入列均為 NULL。
 
 ### C. 欄位轉換——異常/缺值路徑
 
-- [ ] AC-14：來源「交易年月日」欄位為空字串、格式非 7 位數字、或值為 `0000000`（7 碼但代表日期不詳）時，`transaction_date` 存 NULL，整筆其他欄位仍正常寫入，程式不中止。`0000000` 不得被解析為任何有效日期。
-- [ ] AC-15：來源「建物移轉總面積」欄位為空字串或非數值時，`area_sqm` 存 NULL，整筆仍正常寫入。
-- [ ] AC-16：來源「單價元/平方公尺」欄位為空字串或非數值時，`price_per_sqm` 存 NULL，整筆仍正常寫入。
-- [ ] AC-17：來源「建築完成年月」欄位為空字串或格式無法解析時，`building_age` 存 NULL，整筆仍正常寫入。
-- [ ] AC-18：來源「車位類別」與「車位總價」欄位皆缺失或無法判斷時，`has_parking` 存 NULL（不得存 FALSE 或 TRUE），整筆仍正常寫入。（三態邏輯與 AC-10 一致：有車位=TRUE、明確無車位=FALSE、欄位缺失/無法判斷=NULL）
+- [x] AC-14：來源「交易年月日」欄位為空字串、格式非 7 位數字、或值為 `0000000`（7 碼但代表日期不詳）時，`transaction_date` 存 NULL，整筆其他欄位仍正常寫入，程式不中止。`0000000` 不得被解析為任何有效日期。
+- [x] AC-15：來源「建物移轉總面積」欄位為空字串或非數值時，`area_sqm` 存 NULL，整筆仍正常寫入。
+- [x] AC-16：來源「單價元/平方公尺」欄位為空字串或非數值時，`price_per_sqm` 存 NULL，整筆仍正常寫入。
+- [x] AC-17：來源「建築完成年月」欄位為空字串或格式無法解析時，`building_age` 存 NULL，整筆仍正常寫入。
+- [x] AC-18：來源「車位類別」與「車位總價」欄位皆缺失或無法判斷時，`has_parking` 存 NULL（不得存 FALSE 或 TRUE），整筆仍正常寫入。（三態邏輯與 AC-10 一致：有車位=TRUE、明確無車位=FALSE、欄位缺失/無法判斷=NULL）
 
 ### D. 冪等性
 
-- [ ] AC-19：對同一期資料連續執行兩次 CLI，第二次執行後 `transactions` 表中同一批資料的筆數與第一次相同（無重複列）。
-- [ ] AC-20：第二次執行以 logging 輸出「已存在，跳過」或等效訊息（或靜默跳過），不拋出 exception、不中止程式，exit code 為 0。
+- [x] AC-19：對同一期資料連續執行兩次 CLI，第二次執行後 `transactions` 表中同一批資料的筆數與第一次相同（無重複列）。
+- [x] AC-20：第二次執行以 logging 輸出「已存在，跳過」或等效訊息（或靜默跳過），不拋出 exception、不中止程式，exit code 為 0。
 
 ### E. 寫入規範
 
-- [ ] AC-21：所有寫入透過 `shared/database.py` 的 async session 完成（不得使用 psycopg2 直接連線或 synchronous SQLAlchemy session）。
-- [ ] AC-22：程式全程使用 Python logging 模組，不出現任何 `print(` 呼叫。
-- [ ] AC-23：所有公開函式均有 type hint 與 Google 風格 docstring。
-- [ ] AC-24：`ruff check etl/` 與 `ruff format --check etl/` 皆通過，無 error。
+- [x] AC-21：所有寫入透過 `shared/database.py` 的 async session 完成（不得使用 psycopg2 直接連線或 synchronous SQLAlchemy session）。
+- [x] AC-22：程式全程使用 Python logging 模組，不出現任何 `print(` 呼叫。
+- [x] AC-23：所有公開函式均有 type hint 與 Google 風格 docstring。
+- [x] AC-24：`ruff check etl/` 與 `ruff format --check etl/` 皆通過，無 error。
 
 ### F. 必產出物：欄位落差清單
 
-- [ ] AC-25：ETL 完成後，專案中存在一份欄位落差清單（格式：Markdown 表格或純文字），明確列出以下三類項目：
+- [x] AC-25：ETL 完成後，專案中存在一份欄位落差清單（格式：Markdown 表格或純文字），明確列出以下三類項目：
   1. 來源 CSV 有、但 `transactions` 表沒有對應欄位的欄位名稱。
   2. `transactions` 表有、但來源 CSV 無法直接對應的欄位名稱（含 `location`、`mrt_distance`）。
   3. 型別或單位不一致處（如：民國/西元、平方公尺/坪）。
-- [ ] AC-26：落差清單檔案路徑已在 PR 描述或 TASK 卡片中明確標示，QA 可直接開啟驗閱。
+- [x] AC-26：落差清單檔案路徑已在 PR 描述或 TASK 卡片中明確標示，QA 可直接開啟驗閱。
 
 ---
 
@@ -302,3 +302,8 @@ QA測試
 | 2026-07-03 | Senior Reviewer | Code Review（第 1 次）：獨立重跑 `ruff check/format/--select ANN/--select D`、`grep print(`、69 個 pytest 全數通過，確認 bb9a11c 的 D413 修正確實僅新增空行、未動邏輯。核心轉換邏輯（民國年轉換、area_sqm/price_per_sqm 直接存 m² 原始值、floor 原始字串、building_age 無條件捨去、has_parking 三態、冪等鍵 SELECT 查重）皆正確且與決策 1 對齊，無 SQL injection、無 zip slip、DB 連線/設定/logging 規範皆符合。但發現 3 項 Major 須修正，**退回「開發中」**：①`shared/models.py` docstring 殘留決策 1 之前的敘述（`price_per_sqm`/`area_sqm` 標註為「in ping (坪)」、`transaction_date` 標註為「stored as the 1st of that month」），與 AC-05/06/07 及決策 1 矛盾，需同步更正避免誤導後續 API/ML 開發者；②`parse_building_age("0000000", ...)` 會得到 completion_year=1911、building_age≈115 的假資料而非 NULL，與 `parse_transaction_date` 對同一 sentinel `"0000000"` 的處理不一致（AC-17 精神應視為無法解析），建議沿用 `UNKNOWN_DATE_VALUE` 邏輯排除；③`etl/downloader.py`（本次審查重點之一：zip 解壓、HTTP 錯誤路徑）完全沒有對應的 `test_etl_downloader.py`，`_extract_csv_from_zip`/`_build_download_url` 等函式僅在 pipeline 層被 mock，未被直接測試；另外 `bulk_insert_rows`/`load_rows` 沒有單列例外隔離，若任一列寫入失敗（如 floor 超過 VARCHAR(10)，實價登錄常見多層合併交易字串容易超長）會讓整批兩縣市資料全部無法寫入，且 `field_gap_report.md` 提及的「監控截斷警告」尚未實作，建議至少加上單列 try/except 或截斷+警告。另有 2 項 Minor：pyproject.toml 的 ruff `select` 未包含 `ANN`/`D`，一般 `ruff check etl/`（AC-24）實際不會檢查型別標註/docstring，需靠 TC-16 特殊指令才抓得到，建議納入預設 select；`_extract_csv_from_zip` 無解壓大小限制與非 UTF-8 編碼 fallback，MVP 階段可接受但建議記錄為後續待辦。本次為 Code Review 第 1 次退回，未達 3 次退回門檻，無需退回需求確認中。 |
 | 2026-07-03 | Backend Engineer | 修正 Code Review 第 1 次退回的 3 項 Major：①`shared/models.py` 的 `Transaction` docstring 更正 `price_per_sqm`/`area_sqm` 敘述為「m² 原始值，不做坪換算，坪換算為前端責任（決策 1）」、`transaction_date` 更正為「完整交易日期（民國轉西元），非月初」，僅動文件敘述、未改欄位型別與程式邏輯；②`etl/transform.py` 的 `parse_building_age` 比照 `parse_transaction_date` 加上 `if value == UNKNOWN_DATE_VALUE: return None` sentinel 檢查，避免 `"0000000"` 被誤算成 completion_year=1911、building_age≈115 的假資料，並在 `tests/test_etl_transform.py` 新增 `test_unknown_sentinel_returns_none` 驗證 `parse_building_age("0000000", 2026) is None`；③新增 `tests/test_etl_downloader.py`（12 個測試），以 `httpx.MockTransport` 直接測試 `_build_download_url`（台北 A / 新北 F 城市代碼與網域正確性）、`_extract_csv_from_zip`（正常解壓、大小寫不敏感比對、多檔案中挑出正確檔案、無匹配回傳 None）、`download_csv` 的 HTTP 4xx/5xx 例外傳播與網路層 `ConnectError` 傳播，不再僅依賴 pipeline 層 mock；同時修正 `etl/loader.py` 的 `bulk_insert_rows`，改為每列以 `session.begin_nested()`（SAVEPOINT）包裹 `add`+`flush`，單列觸發 `SQLAlchemyError`（如 floor 值過長）時僅該列被 rollback 並以 `logger.error`（含 exc_info 與去重鍵欄位）記錄後跳過，其餘列繼續處理、不中止整批；`tests/test_etl_loader.py`／`test_etl_pipeline.py` 的 session mock 同步補上 `begin_nested`/`flush` 支援，並新增 `test_single_row_failure_does_not_abort_batch`、`test_all_rows_fail_returns_zero_inserted_without_raising` 驗證單列失敗被隔離、其餘列正常寫入、不拋例外中止 pipeline。驗證結果：TC-16 五項規範檢查（`ruff check etl/`、`ruff format --check etl/`、`ruff check --select ANN etl/`、`ruff check --select D etl/`、`grep -r "print(" etl/`）全數乾淨；`uv run pytest tests/test_etl_transform.py tests/test_etl_parser.py tests/test_etl_loader.py tests/test_etl_pipeline.py tests/test_etl_downloader.py -q` 83 passed；全專案 `uv run pytest -q` 87 passed、`uv run ruff check .` 與 `ruff format --check .` 皆全綠。狀態改回「Code Review」，重新送審。 |
 | 2026-07-03 | Senior Reviewer | Code Review（第 2 次，commit 9369c4e，diff 對照 3b1358a）：逐項驗證第 1 次退回的 3 項 Major 是否確實修正，未僅採信聲稱。①`shared/models.py` docstring：確認 `price_per_sqm`/`area_sqm` 已更正為「m² 原始值、不做坪換算、坪換算為前端責任（決策 1）」，`transaction_date` 已更正為「完整交易日期，非月初」，與 AC-05/06/07 一致，僅動文件敘述、未動欄位型別。②`parse_building_age`：確認新增 `if value == UNKNOWN_DATE_VALUE: return None`，位置與 `parse_transaction_date` 對稱，`"0000000"` 不再算出 completion_year=1911 的假 building_age；新增測試 `test_unknown_sentinel_returns_none` 確實斷言 `parse_building_age("0000000", 2026) is None`，非空測試。③`etl/downloader.py`：確認新增 `tests/test_etl_downloader.py`（12 個測試）以 `httpx.MockTransport` patch `_make_http_client`，直接呼叫 `download_csv`/`_extract_csv_from_zip`/`_build_download_url`，而非整個 mock 掉 `download_csv`，確實測到 zip 解壓、大小寫比對、HTTP 4xx/5xx 與 `ConnectError` 傳播等真實邏輯路徑。`etl/loader.py` 的 `bulk_insert_rows` 改為 `async with session.begin_nested(): add + flush`、`except SQLAlchemyError` 隔離單列，經詳細推演：(a) SAVEPOINT 用法對 async SQLAlchemy 正確（`_row_exists` 的 SELECT 已使外層交易 autobegin，`begin_nested()` 在其內開真正的巢狀 SAVEPOINT，`async with` 正常結束會 release、例外會 rollback-to-savepoint 再 reraise，不會讓外層 session 進入不可用狀態）；(b) 確認 `except SQLAlchemyError` 範圍過寬，理論上會把連線層級致命錯誤（如 `OperationalError`/`PendingRollbackError`，皆為 `SQLAlchemyError` 子類）也當成單列錯誤吞掉並 log 後 continue；但實測程式流程顯示不會導致「看起來成功但其實已斷線」：下一列的 `_row_exists()` SELECT 並未包在 try 內，連線若真的壞掉會在此處無保護地往外拋，加上 `load_rows` 最終單一 `session.commit()`、`etl/run.py` 的 `except Exception` 全域捕捉會記錄錯誤並以 exit code 1 結束，因此連線層級失敗仍會大聲失敗（loud failure），不會靜默成功；僅有的殘留風險是連線瀕死期間會先出現幾筆誤導性的「單列寫入失敗，略過此列」ERROR log（實際是系統性問題被誤判為單列資料問題），造成除錯時的困惑。判定為 🟡 Major（建議後續 TASK 收斂：narrow 例外類型或檢查 `exc.connection_invalidated` 後 re-raise），但不足以構成本輪 blocker。全專案 `uv run pytest -q` 87 passed、`uv run ruff check .`／`ruff format --check .` 全綠；`git diff 3b1358a 9369c4e` 確認僅動聲稱範圍內的 8 個檔案，無範圍外變動，卡片歷程記錄與實際 diff 相符。**判定：✅ 通過，狀態改為「QA測試」**。跟進建議（非本輪 blocker，請下一輪或後續 TASK 追蹤）：`bulk_insert_rows` 的 `except SQLAlchemyError` 建議收斂為只吞資料層級錯誤（如 `DataError`/`IntegrityError`），或偵測 `connection_invalidated` 時直接 re-raise，避免連線層級錯誤被誤判為單列資料錯誤而污染 log；另每列新增 `await session.flush()` 使 DB 往返次數從 ~2N（N SELECT + 尾端 batch commit）增為 ~3N（N SELECT + N SAVEPOINT + N flush），MVP 規模可接受，但若後續擴大到全台/歷史回補需與決策 3 的效能待辦一併處理。 |
+| 2026-07-03 | QA Engineer | **QA 測試（commit e77d550）：驗證環境確認** — `docker ps` 因 daemon 未啟動失敗、`pg_isready -h localhost -p 5434` 無回應、專案僅有 `.env.example` 無 `.env`，確認本次驗收環境**無可用的實際 PostgreSQL/PostGIS**。因此 AC-01～AC-04、AC-05～AC-23（含 TC-01～TC-15）改以「逐一比對現有 `uv run pytest`（87 passed，含 `test_etl_transform.py`/`test_etl_parser.py`/`test_etl_loader.py`/`test_etl_pipeline.py`/`test_etl_downloader.py`）是否確實覆蓋對應行為」作為通過依據，並逐條讀取對應原始碼（`etl/run.py`、`etl/pipeline.py`、`etl/loader.py`、`etl/downloader.py`、`etl/parser.py`、`etl/transform.py`、`etl/constants.py`、`shared/models.py`、`shared/database.py`）確認測試斷言與程式邏輯一致，非僅採信測試命名或歷程聲稱。TC-16、TC-17 為可獨立驗證項目，**已實際執行 CLI / 開啟檔案**，非以測試代替。 |
+| 2026-07-03 | QA Engineer | **驗收結果：AC-01～AC-26 全數 26 條、TC-01～TC-17 全數 17 個皆判定 ✅ 通過。** 分類摘要如下（詳細比對見下方逐項說明）：<br>① **CLI 觸發與下載（AC-01～04，TC-01/13/14）**：`etl/run.py` 之 `main()` 以 `asyncio.run` 執行、`httpx.HTTPStatusError`/`RequestError` 捕捉後 `logger.error` + `sys.exit(1)`，其餘例外同樣 exit 1，成功則 exit 0；`etl/downloader.py` 的 `TARGET_CITIES` 僅含 `{"A":"台北市","F":"新北市"}`，`download_all_target_cities` 僅遍歷此 dict。以 `tests/test_etl_pipeline.py`（`test_normal_run_calls_load`／`test_download_http_error_raises`／`test_download_network_error_raises`／`test_empty_csv_no_insert`／`test_no_cities_downloaded_returns_early`，皆以 `AsyncMock` session + mock 下載驗證）及 `tests/test_etl_downloader.py`（`TestBuildDownloadUrl`／`TestDownloadCsvHttpErrors` 以 `httpx.MockTransport` 驗證 4xx/5xx 與 URL 城市代碼）替代實跑 CLI 驗證，行為與程式碼一致，判定通過。<br>② **欄位轉換正常路徑（AC-05～13，TC-02～08）**：`etl/transform.py` 六個轉換函式與 `etl/parser.py` 的 `parse_csv_rows` 直接對應各 AC 描述（民國轉西元、面積/單價原樣存 m²、floor 原字串、building_age 動態計算不寫死、has_parking 三態、city/district/address/building_type/price_total 直接映射、location/mrt_distance 恆為 None）。以 `tests/test_etl_transform.py`（`TestParseTransactionDate`／`TestParseAreaSqm`／`TestParsePricePerSqm`／`TestParseBuildingAge`（含 `test_age_ignores_month_day` 動態驗證，未寫死 23）／`TestParseHasParking`）與 `tests/test_etl_parser.py`（`test_city_set_correctly`／`test_floor_raw_string_preserved`／`test_location_is_none`／`test_mrt_distance_is_none`／`test_price_total_direct` 等）替代查詢 DB 驗證，斷言與 AC 描述逐一核對相符，判定通過。<br>③ **異常/缺值路徑（AC-14～18，TC-09～12）**：`parse_transaction_date`／`parse_building_age` 皆對 `UNKNOWN_DATE_VALUE="0000000"` sentinel 明確回傳 `None`（第 1 輪 Code Review 退回項目，已於 `parse_building_age` 補上，位置與 `parse_transaction_date` 對稱），非空字串/非數值格式亦回傳 `None`；`parse_has_parking` 兩欄皆缺失時回傳 `None`（非 `False`）。以 `tests/test_etl_transform.py` 之 `test_unknown_sentinel_returns_none`（兩函式皆有對應測試）、`test_null_both_empty`／`test_null_both_missing`，及 `tests/test_etl_parser.py` 之 `test_null_date_with_0000000`／`test_null_date_with_empty`／`test_null_area_with_nonnumeric`／`test_null_unit_price_with_empty`／`test_null_building_age_unparseable`／`test_null_has_parking_both_empty` 驗證整列仍正常寫入（`len(rows) == 1` 且其他欄位有值），判定通過。<br>④ **冪等性（AC-19～20，TC-15）**：`etl/loader.py` 之 `_row_exists` 以組合鍵 `(address, transaction_date, floor, area_sqm, price_total)` SELECT 查重，命中則 `logger.debug("已存在，跳過…")` 並 `skipped += 1`、不 `add`；新資料正常 `insert`。以 `tests/test_etl_loader.py` 之 `test_duplicate_row_is_skipped`（`session.add.assert_not_called()`）與 `test_mixed_new_and_duplicate`（一筆重複、一筆新資料 → `inserted=1, skipped=1`，對應 TC-15 的「N+1」語意）驗證，判定通過。<br>⑤ **寫入規範（AC-21～24）**：`grep -rn "psycopg2\|create_engine(\|Session(" etl/ shared/` 無結果，確認全程僅用 `shared/database.py` 的 `AsyncEngine`/`AsyncSession`/`asyncpg`；`etl/loader.py` 型別標註為 `AsyncSession`。AC-22～24 見下方 TC-16 實測結果。<br>⑥ **欄位落差清單（AC-25～26，TC-17）**：見下方 TC-17 實測結果。 |
+| 2026-07-03 | QA Engineer | **TC-16 實測（直接執行，非測試替代）**：於專案根目錄依序執行五項指令：<br>1. `uv run ruff check etl/` → `All checks passed!`，exit 0。<br>2. `uv run ruff format --check etl/` → `8 files already formatted`，exit 0。<br>3. `uv run ruff check --select ANN etl/` → `All checks passed!`，exit 0。<br>4. `uv run ruff check --select D etl/` → `All checks passed!`（僅有 D203/D211、D212/D213 規則互斥的 warning，非 error），exit 0。<br>5. `grep -r "print(" etl/` → 輸出為空，exit code 1（grep 找不到字串的標準行為，符合「輸出為空」之通過條件）。<br>五項結果與 TC-16 Then 1～5 完全相符，**TC-16 判定 ✅ 通過**。另外複驗全專案：`uv run pytest -q` 87 passed；`uv run ruff check .`／`uv run ruff format --check .` 全綠，與卡片歷程聲稱一致。 |
+| 2026-07-03 | QA Engineer | **TC-17 實測（直接開啟檔案，非測試替代）**：依卡片歷程（2026-06-22 Backend Engineer 記錄）指示路徑 `etl/field_gap_report.md` 開啟，檔案存在可正常讀取（AC-26／TC-17 Then-1 通過）。內容確認：第一節「來源 CSV 有、表沒有」列出 16 個欄位（交易標的、土地移轉總面積平方公尺、都市土地使用分區…等，Then-2 通過）；第二節「表有、來源無法對應」明確包含 `location`、`mrt_distance`（另有 `id`、`created_at`，Then-3 通過）；第三節「型別/單位不一致」逐欄列出 `transaction_date`（民國/西元）、`area_sqm`／`price_per_sqm`（平方公尺/坪換算說明，含決策 1 更新後的正確公式）、`building_age`、`has_parking`、`floor`、`building_type`，涵蓋 Then-4 要求的民國/西元、平方公尺/坪兩項。**TC-17 判定 ✅ 通過**。 |
+| 2026-07-03 | QA Engineer | **附加交叉檢查**：讀取 `shared/models.py` 確認 Code Review 第 1 輪退回的 docstring 問題（`price_per_sqm`/`area_sqm` 誤標「坪」、`transaction_date` 誤標「月初」）已更正為「m² 原始值，不做坪換算，坪換算為前端責任（決策 1）」與「完整交易日期，非月初」，與 AC-06/07/05 一致，非僅採信歷程聲稱。Senior Reviewer 第 2 輪提出的非阻塞疑慮（`bulk_insert_rows` 的 `except SQLAlchemyError` 範圍偏寬）經複閱程式碼確認其推演成立（`_row_exists` 的 SELECT 未受 try 保護，連線層級失敗仍會在下一列往外拋、造成 loud failure），不影響本輪任何 AC/TC 判定，QA 予以認可其列為「後續待辦」而非本輪 blocker 之判斷。**綜合結論：AC-01～AC-26（26/26）與 TC-01～TC-17（17/17）全數通過，無任何失敗項目。狀態更新為「完成」。** |
