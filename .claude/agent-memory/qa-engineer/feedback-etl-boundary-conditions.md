@@ -47,8 +47,16 @@ ETL 任務 QA 必須涵蓋以下情境，否則容易在測案撰寫階段遺漏
 **11. BOOLEAN 多態（三態）欄位要明確定義每個態，不能只描述部分**
 - 有「缺失 = NULL」與「無車位 = FALSE」兩種不同空狀態的 BOOLEAN 欄位，AC 必須列出 TRUE/FALSE/NULL 三態的觸發條件，且 AC 正常路徑與 AC 異常路徑要互相引用，確保邏輯一致。
 
-**Why:** TASK-002 ETL 測案在第一輪撰寫後被 Senior Reviewer 以 5 個 Blocker 退回，問題集中在數值計算錯誤、公式方向錯誤、三態矛盾、去重鍵未定義、時間硬編碼五類。
+**12. 同一來源欄位語意的 sentinel 值，要對「每一個」消費它的轉換函式都補測案**
+- TASK-002：`交易年月日` 的 `"0000000"`（日期不詳）sentinel，QA 原始 AC-14/TC-09 只針對 `transaction_date`（來自「交易年月日」欄）驗證。但 `building_age` 是由「建築完成年月」（同樣是 ROC 7 碼日期格式、同樣可能出現 `"0000000"`）算出，屬於「格式相同、語意相同」的姊妹欄位，卻沒有對應 AC/TC，導致 Code Review 第 1 輪才發現 `parse_building_age("0000000", ...)` 算出 completion_year=1911 的假屋齡。
+- **How to apply**：撰寫 AC/TC 時，只要發現多個欄位共用同一種「格式合法但語意無效」的來源格式（如 ROC 日期 sentinel、"不詳"、"--" 等慣用缺值標記），要列出所有消費該格式的目標欄位，逐一補上對應的 sentinel 測案，不能只驗第一個想到的欄位。
 
-**How to apply:** 每次有 ETL 類 TASK 進入需求確認階段，用此清單（11 點）checklist 比對草稿測案。重點審查：換算公式獨立驗算、BOOLEAN 三態完整定義、冪等性含反向驗證、特殊邊界值逐條列出、時間依賴值改動態描述。
+**13. Batch/bulk 寫入操作要明確要求「單列失敗隔離」的 AC，不能只靠 Code Review 補**
+- TASK-002 原始 AC-01~26 沒有一條要求「批次寫入時，若其中一列因資料超長等原因寫入失敗，其餘列仍須正常寫入、不得讓整批失敗」。這個要求是 Code Review 第 1 輪才以 Major 提出，屬於 QA 在需求確認階段就該想到但漏寫的驗收面向。
+- **How to apply**：任何「批次寫入 DB」的 ETL/Loader 類任務，撰寫驗收標準時要主動加一條 AC：「批次中任一列寫入失敗（如欄位值超長、型別不符）時，僅該列被跳過並記錄錯誤，其餘列不受影響、程式不中止」，並搭配 TC 用 mock session 讓某一列 flush 拋例外、驗證其餘列仍計入 inserted。
 
-Related: [[project-overview]]
+**Why:** TASK-002 ETL 測案在第一輪撰寫後被 Senior Reviewer 以 5 個 Blocker 退回（見上方 1-11 點）；後續 Code Review 第 1 輪又抓到 2 個本應由 QA 事先想到的驗收缺口（sentinel 值只驗一個欄位、批次寫入缺單列隔離要求）。
+
+**How to apply:** 每次有 ETL 類 TASK 進入需求確認階段，用此清單（13 點）checklist 比對草稿測案。重點審查：換算公式獨立驗算、BOOLEAN 三態完整定義、冪等性含反向驗證、特殊邊界值逐條列出、時間依賴值改動態描述、共用格式的 sentinel 要對每個消費欄位都補測案、批次寫入要求單列失敗隔離。
+
+Related: [[project-overview]], [[feedback-no-live-db-verification]]
