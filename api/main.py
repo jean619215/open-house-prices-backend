@@ -8,7 +8,7 @@ import logging.config
 
 from fastapi import FastAPI
 
-from api.routers import health
+from api.routers import health, prices
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
 
     # Routers
     application.include_router(health.router)
+    application.include_router(prices.router)
 
     logger.info("FastAPI application created")
     return application

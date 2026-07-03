@@ -1,6 +1,12 @@
 """Unit tests for etl.pipeline — end-to-end pipeline orchestration.
 
 Covers AC-01, AC-03, AC-04, TC-01, TC-13, TC-14.
+Also covers TASK-003 AC-09~AC-12, TC-08~TC-10 (city_stats REFRESH after ETL
+load): these are logic-level tests using mocks, since no real PostgreSQL is
+available in this environment (no docker daemon) to run REFRESH MATERIALIZED
+VIEW against an actual city_stats view. TC-08/TC-09, which require a real DB
+to observe city_stats reflecting new/updated data, are NOT run here and
+should be verified in a DB-available environment (see TASK-003 card 歷程).
 Mocks download and DB session so no real network or database is needed.
 """
 
@@ -9,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 # Set dummy env before importing shared modules
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost/test")
@@ -16,7 +23,7 @@ os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
 os.environ.setdefault("SECRET_KEY", "dummy-secret-for-tests")
 os.environ.setdefault("ENVIRONMENT", "test")
 
-from etl.pipeline import run_pipeline  # noqa: E402
+from etl.pipeline import _refresh_city_stats, run_pipeline  # noqa: E402
 
 # Minimal valid CSV content (header only triggers empty-CSV path; add a data row for normal path)
 _CSV_HEADER = (
@@ -92,10 +99,51 @@ class TestRunPipeline:
         with (
             patch("etl.pipeline.download_all_target_cities", return_value={"A": _VALID_CSV}),
             patch("etl.pipeline.get_session_factory", return_value=factory),
+            patch("etl.pipeline._refresh_city_stats", new=AsyncMock()) as refresh_mock,
         ):
             await run_pipeline()
 
         session.commit.assert_awaited_once()
+        refresh_mock.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_refresh_called_after_successful_load(self) -> None:
+        """TC-08 (logic-level) AC-09: refresh runs once the write step succeeds,
+        using the same session that performed the load.
+        """
+        session = _make_session_mock()
+        factory = _make_factory_mock(session)
+
+        with (
+            patch("etl.pipeline.download_all_target_cities", return_value={"A": _VALID_CSV}),
+            patch("etl.pipeline.get_session_factory", return_value=factory),
+            patch("etl.pipeline._refresh_city_stats", new=AsyncMock()) as refresh_mock,
+        ):
+            await run_pipeline()
+
+        refresh_mock.assert_awaited_once_with(session)
+
+    @pytest.mark.asyncio
+    async def test_refresh_called_even_when_all_rows_duplicate(self) -> None:
+        """TC-09 (logic-level) AC-11: refresh still runs when every row in the
+        batch is judged a duplicate (inserted=0) — REFRESH is idempotent and
+        is not conditioned on inserted count.
+        """
+        session = _make_session_mock()
+        # Simulate every dedup check finding an existing row → inserted=0.
+        existing_scalar = MagicMock()
+        existing_scalar.scalar_one_or_none.return_value = 1
+        session.execute = AsyncMock(return_value=existing_scalar)
+        factory = _make_factory_mock(session)
+
+        with (
+            patch("etl.pipeline.download_all_target_cities", return_value={"A": _VALID_CSV}),
+            patch("etl.pipeline.get_session_factory", return_value=factory),
+            patch("etl.pipeline._refresh_city_stats", new=AsyncMock()) as refresh_mock,
+        ):
+            await run_pipeline()
+
+        refresh_mock.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_download_http_error_raises(self) -> None:
@@ -128,11 +176,14 @@ class TestRunPipeline:
         with (
             patch("etl.pipeline.download_all_target_cities", return_value={"A": _EMPTY_CSV}),
             patch("etl.pipeline.get_session_factory", return_value=factory),
+            patch("etl.pipeline._refresh_city_stats", new=AsyncMock()) as refresh_mock,
         ):
             await run_pipeline()
 
         # No rows → load_rows not called with any data → commit never called
         session.commit.assert_not_awaited()
+        # TC-10 AC-10: write step never entered → refresh must not run.
+        refresh_mock.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_no_cities_downloaded_returns_early(self) -> None:
@@ -143,7 +194,58 @@ class TestRunPipeline:
         with (
             patch("etl.pipeline.download_all_target_cities", return_value={}),
             patch("etl.pipeline.get_session_factory", return_value=factory),
+            patch("etl.pipeline._refresh_city_stats", new=AsyncMock()) as refresh_mock,
         ):
             await run_pipeline()
+
+        session.commit.assert_not_awaited()
+        # TC-10 AC-10: write step never entered → refresh must not run.
+        refresh_mock.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_refresh_failure_propagates(self) -> None:
+        """AC-12: a REFRESH failure must propagate out of run_pipeline (not be
+        swallowed), so ``python -m etl.run`` exits non-zero.
+        """
+        session = _make_session_mock()
+        factory = _make_factory_mock(session)
+
+        with (
+            patch("etl.pipeline.download_all_target_cities", return_value={"A": _VALID_CSV}),
+            patch("etl.pipeline.get_session_factory", return_value=factory),
+            patch(
+                "etl.pipeline._refresh_city_stats",
+                new=AsyncMock(side_effect=SQLAlchemyError("refresh boom")),
+            ),
+        ):
+            with pytest.raises(SQLAlchemyError):
+                await run_pipeline()
+
+
+class TestRefreshCityStats:
+    """Direct unit tests for the ``_refresh_city_stats`` helper (AC-09, AC-12)."""
+
+    @pytest.mark.asyncio
+    async def test_executes_refresh_and_commits(self) -> None:
+        """AC-09: issues REFRESH MATERIALIZED VIEW city_stats and commits."""
+        session = _make_session_mock()
+
+        await _refresh_city_stats(session)
+
+        session.execute.assert_awaited_once()
+        (executed_stmt,), _ = session.execute.await_args
+        assert "REFRESH MATERIALIZED VIEW city_stats" in str(executed_stmt)
+        session.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_refresh_error_is_logged_and_reraised(self) -> None:
+        """AC-12: a DB error during REFRESH is logged at ERROR level and
+        re-raised (not swallowed).
+        """
+        session = _make_session_mock()
+        session.execute = AsyncMock(side_effect=SQLAlchemyError("refresh boom"))
+
+        with pytest.raises(SQLAlchemyError):
+            await _refresh_city_stats(session)
 
         session.commit.assert_not_awaited()
