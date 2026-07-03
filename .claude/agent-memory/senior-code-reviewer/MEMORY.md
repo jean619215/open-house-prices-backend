@@ -1,0 +1,2 @@
+- [TASK-001 Pre-implementation Spec Review](project-task001-review.md) — spec gaps found in DB model types, Alembic async/sync, health timeout, Docker healthcheck config
+- [TASK-002 Test Case Review](project-task002-testcase-review.md) — TC-03 wrong expected values (math errors), AC-07 misleading formula, has_parking 3-state logic conflict, TC-15 dedup key undefined, TC-05 hardcoded year; returned to 需求確認中

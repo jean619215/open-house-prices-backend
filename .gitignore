@@ -1,0 +1,74 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- uv ----
+# Lockfile is committed; cache is not
+.uv/
+.uv-cache/
+
+# ---- Environment / secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Testing / coverage ----
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+.cache/
+
+# ---- Type checkers / linters ----
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
+
+# ---- Alembic ----
+# Migration scripts are tracked; only local artifacts ignored
+
+# ---- Celery ----
+celerybeat-schedule
+celerybeat.pid
+
+# ---- Logs / runtime ----
+*.log
+logs/
+
+# ---- Jupyter / ML artifacts ----
+.ipynb_checkpoints/
+*.pkl
+*.joblib
+models/*.bin
+
+# ---- IDE / editor ----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Claude Code (local-only) ----
+.claude/settings.local.json
