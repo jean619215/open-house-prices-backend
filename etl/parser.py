@@ -57,6 +57,7 @@ def _get_col(row: dict[str, str], *keys: str) -> str:
 
     Returns:
         The stripped column value, or ``""`` if none matched.
+
     """
     for key in keys:
         if key in row:
@@ -72,6 +73,7 @@ def _determine_city(city_code: str) -> str:
 
     Returns:
         Chinese city name, e.g. ``"台北市"``.
+
     """
     return TARGET_CITIES.get(city_code, city_code)
 
@@ -94,6 +96,7 @@ def parse_csv_rows(
 
     Returns:
         List of row dicts ready for database insertion.
+
     """
     city = _determine_city(city_code)
     rows: list[dict[str, Any]] = []

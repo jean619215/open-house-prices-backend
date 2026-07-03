@@ -29,6 +29,7 @@ async def run_pipeline() -> None:
         httpx.HTTPStatusError: If any city download returns an HTTP error.
         httpx.RequestError: If a network error occurs during download.
         Exception: Re-raises any unexpected DB or parse error.
+
     """
     current_year = date.today().year
     logger.info(

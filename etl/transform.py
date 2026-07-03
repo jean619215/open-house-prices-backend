@@ -7,6 +7,7 @@ Note:
     DB stores area in square metres (m²) and unit price in TWD/m² — the raw
     values from the MOI source data.  Conversion to ping (坪) is the
     frontend's responsibility:  坪 = 平方公尺 ÷ 3.305785
+
 """
 
 import logging
@@ -31,6 +32,7 @@ def parse_transaction_date(raw: str) -> date | None:
     Returns:
         A Python ``date`` for the parsed date, or ``None`` if the input is
         empty, not a valid 7-digit string, or equals ``"0000000"``.
+
     """
     value = raw.strip()
     if not value or len(value) != 7 or not value.isdigit():
@@ -61,6 +63,7 @@ def parse_area_sqm(raw: str) -> Decimal | None:
 
     Returns:
         Area in m² rounded to 2 decimal places, or ``None`` if unparseable.
+
     """
     value = raw.strip()
     if not value:
@@ -87,6 +90,7 @@ def parse_price_per_sqm(raw: str) -> Decimal | None:
     Returns:
         Unit price in TWD/m² rounded to 2 decimal places, or ``None``
         if unparseable.
+
     """
     value = raw.strip()
     if not value:
@@ -108,6 +112,7 @@ def parse_price_total(raw: str) -> Decimal | None:
 
     Returns:
         Total price as Decimal, or ``None`` if unparseable.
+
     """
     value = raw.strip()
     if not value:
@@ -135,6 +140,7 @@ def parse_building_age(raw_completion_date: str, current_year: int) -> int | Non
     Returns:
         Building age as a non-negative integer, or ``None`` if the input is
         empty, unparseable, or yields a negative age.
+
     """
     value = raw_completion_date.strip()
     if not value or len(value) < 3 or not value[:3].isdigit():
@@ -171,6 +177,7 @@ def parse_has_parking(parking_type: str, parking_price: str) -> bool | None:
 
     Returns:
         ``True``, ``False``, or ``None`` according to three-state logic.
+
     """
     ptype = parking_type.strip()
     pprice_raw = parking_price.strip()

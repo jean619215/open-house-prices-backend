@@ -1,7 +1,7 @@
 # TASK-002 實價登錄 ETL — 匯入 pipeline（最小可運作版）
 
 ## 狀態
-開發中
+Code Review
 
 ## 類型
 後端（ETL）
@@ -298,3 +298,4 @@
 | 2026-06-17 | QA Engineer | 依 Senior Reviewer 退回清單修正 9 項（Blocker 5、Major 3、Nit 1）：①TC-03 面積期望值更正為 19.995（66.10÷3.305785=19.9953）；②TC-03 單價期望值更正為 958678（290000×3.305785=958677.65）；③AC-07 公式修正為「元/平方公尺 × 3.305785 = 元/坪」，移除無效的 ÷3.305785；④AC-10 改為三態定義（TRUE/FALSE/NULL）、AC-18 補充三態說明，兩者邏輯統一；⑤TC-15 補上去重鍵定義（address, transaction_date, floor, area_sqm, price_total）及明確 Given/When/Then，含「新筆仍可寫入」的反向驗證；⑥TC-05 改為動態描述「執行當年 − 2003」，禁止寫死數字；⑦AC-09 明確標註「只取整數年、無條件捨去到年，不計月份」為刻意設計；⑧AC-14 補上 `0000000` 轉 NULL 規則、TC-09 新增列 B（`0000000`）邊界驗證；⑨TC-16 以可執行指令（uv run ruff check/format、ruff --select ANN、ruff --select D、grep）取代「手動確認」字眼。狀態更新為「開發中」。 |
 | 2026-06-22 | Backend Engineer | 實作 ETL pipeline（etl/ 下新增 5 個模組）：constants.py 定義常數、transform.py 實作 6 個欄位轉換函式（民國年、面積坪換算、單價坪換算、屋齡、三態車位）、parser.py 解析 CSV、downloader.py 下載解壓 MOI zip、loader.py 冪等寫入（去重鍵 address+transaction_date+floor+area_sqm+price_total）、pipeline.py 串接流程、run.py CLI 入口（python -m etl.run）。新增 tests/test_etl_transform.py、test_etl_parser.py、test_etl_loader.py、test_etl_pipeline.py 共 69 個單元測試。全測試 73 passed，ruff check/format 全綠。欄位落差清單：etl/field_gap_report.md（詳列來源有表無/表有來源無/型別單位不一致，含 4 項潛在議題：area_sqm/price_per_sqm 命名誤導、building_type VARCHAR(20) 截斷風險、冪等鍵效能、來源無穩定 unique key）。狀態更新為「Code Review」。 |
 | 2026-06-22 | Backend Engineer | 依需求方 4 項決策修改（決策 1 為需求變更，移除坪換算改存平方公尺、parse_area_ping→parse_area_sqm、parse_price_per_sqm_to_ping→parse_price_per_sqm、移除 SQM_PER_PING 常數、AC-06/AC-07/TC-03/TC-15 同步訂正為平方公尺版本、tests 斷言更新；決策 2：building_type→Text + migration 002_building_type_to_text；決策 3：去重效能記為後續待辦 TASK，不改程式；決策 4：httpx 升正式 [project] dependencies）。因 AC/TC 有變動，狀態從「Code Review」改回「開發中」，需重新走 QA 複驗。 |
+| 2026-07-03 | Backend Engineer | 修正 AC-24/TC-16 規範缺口：`uv run ruff check --select D etl/` 原有 23 處 D413（Google 風格 docstring 區塊「Args/Returns/Raises/Yields/Note」後缺空行），涉及 7 個檔案（constants.py、downloader.py、loader.py、parser.py、pipeline.py、run.py、transform.py），以 `ruff check --select D413 --fix` 修正並逐一 diff 確認僅新增空行、未變動任何函式邏輯、型別轉換規則或去重鍵定義。複驗 TC-16 五項指令：`ruff check etl/`、`ruff format --check etl/`、`ruff check --select ANN etl/`、`ruff check --select D etl/`、`grep -r "print(" etl/` 全數乾淨（exit code 0 / 無 print）。`uv run pytest tests/test_etl_transform.py tests/test_etl_parser.py tests/test_etl_loader.py tests/test_etl_pipeline.py` 69 passed，無因 docstring 修改影響邏輯。狀態依流程更新為「Code Review」。 |

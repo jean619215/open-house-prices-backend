@@ -4,6 +4,7 @@ Note:
     DB stores area in square metres (m²) and unit price in TWD/m² — raw values
     from the MOI source.  Conversion to ping (坪) is the frontend's responsibility:
         坪 = 平方公尺 ÷ 3.305785
+
 """
 
 # 支援的縣市清單（台北市=A, 新北市=F）

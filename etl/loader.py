@@ -27,6 +27,7 @@ def _build_dedup_key(row: dict[str, Any]) -> tuple[Any, ...]:
 
     Returns:
         Tuple of (address, transaction_date, floor, area_sqm, price_total).
+
     """
     return tuple(row.get(col) for col in _DEDUP_COLS)
 
@@ -40,6 +41,7 @@ async def _row_exists(session: AsyncSession, row: dict[str, Any]) -> bool:
 
     Returns:
         ``True`` if a matching row exists, ``False`` otherwise.
+
     """
     conditions = []
     for col in _DEDUP_COLS:
@@ -71,6 +73,7 @@ async def bulk_insert_rows(
 
     Returns:
         A tuple ``(inserted, skipped)`` with counts of new and duplicate rows.
+
     """
     inserted = 0
     skipped = 0
@@ -112,6 +115,7 @@ async def load_rows(
 
     Returns:
         A tuple ``(inserted, skipped)``.
+
     """
     if not rows:
         logger.warning("load_rows: 無可匯入資料（rows 為空）")

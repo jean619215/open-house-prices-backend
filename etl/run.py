@@ -32,6 +32,7 @@ def main() -> None:
 
     Raises:
         SystemExit: Always exits; code 0 on success, 1 on error.
+
     """
     try:
         asyncio.run(run_pipeline())

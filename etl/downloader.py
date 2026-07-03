@@ -28,6 +28,7 @@ async def _make_http_client() -> AsyncIterator[httpx.AsyncClient]:
 
     Yields:
         httpx.AsyncClient: Configured client with appropriate timeouts.
+
     """
     timeout = httpx.Timeout(connect=_CONNECT_TIMEOUT, read=_READ_TIMEOUT, write=30.0, pool=5.0)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
@@ -42,6 +43,7 @@ def _build_download_url(city_code: str) -> str:
 
     Returns:
         Full download URL string.
+
     """
     return MOI_DOWNLOAD_BASE_URL.format(city_code=city_code)
 
@@ -58,6 +60,7 @@ def _extract_csv_from_zip(zip_bytes: bytes, city_code: str) -> str | None:
 
     Returns:
         Decoded CSV string, or ``None`` if no matching file was found.
+
     """
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         target_suffix = f"{city_code.lower()}_lvr_land_a.CSV"
@@ -86,6 +89,7 @@ async def download_csv(city_code: str) -> str | None:
     Raises:
         httpx.HTTPStatusError: If the server returns an HTTP error (4xx/5xx).
         httpx.RequestError: If a network-level error occurs.
+
     """
     url = _build_download_url(city_code)
     city_name = TARGET_CITIES.get(city_code, city_code)
@@ -113,6 +117,7 @@ async def download_all_target_cities() -> dict[str, str]:
     Raises:
         httpx.HTTPStatusError: If any download returns an HTTP error.
         httpx.RequestError: If a network error occurs for any city.
+
     """
     results: dict[str, str] = {}
     for city_code in TARGET_CITIES:
@@ -130,6 +135,7 @@ def save_csv_to_disk(content: str, path: Path) -> None:
     Args:
         content: CSV string content.
         path: Target file path.
+
     """
     path.write_text(content, encoding="utf-8")
     logger.debug("Saved CSV to %s", path)
