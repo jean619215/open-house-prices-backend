@@ -10,6 +10,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 from etl.loader import bulk_insert_rows, load_rows
 
@@ -46,6 +47,20 @@ def _make_row(**overrides: Any) -> dict[str, Any]:
     return base
 
 
+def _make_nested_transaction_mock() -> AsyncMock:
+    """Build a mock object simulating ``session.begin_nested()``'s return value.
+
+    Returns:
+        AsyncMock supporting the async context manager protocol, propagating
+        (not suppressing) any exception raised inside the ``async with`` block
+        — matching real SAVEPOINT rollback-then-reraise behaviour.
+    """
+    nested = AsyncMock()
+    nested.__aenter__ = AsyncMock(return_value=nested)
+    nested.__aexit__ = AsyncMock(return_value=False)
+    return nested
+
+
 def _make_session_mock(*, existing_row: bool = False) -> AsyncMock:
     """Build a mock AsyncSession.
 
@@ -62,6 +77,8 @@ def _make_session_mock(*, existing_row: bool = False) -> AsyncMock:
     session.execute = AsyncMock(return_value=scalar_mock)
     session.add = MagicMock()
     session.commit = AsyncMock()
+    session.flush = AsyncMock()
+    session.begin_nested = MagicMock(side_effect=_make_nested_transaction_mock)
     return session
 
 
@@ -103,6 +120,8 @@ class TestBulkInsertRows:
         session = AsyncMock()
         session.add = MagicMock()
         session.commit = AsyncMock()
+        session.flush = AsyncMock()
+        session.begin_nested = MagicMock(side_effect=_make_nested_transaction_mock)
 
         # First call (existing row): returns an id.  Second call (new row): None.
         scalar_existing = MagicMock()
@@ -126,6 +145,50 @@ class TestBulkInsertRows:
         """Empty input → 0, 0."""
         session = _make_session_mock()
         inserted, skipped = await bulk_insert_rows(session, [])
+        assert inserted == 0
+        assert skipped == 0
+
+    @pytest.mark.asyncio
+    async def test_single_row_failure_does_not_abort_batch(self) -> None:
+        """Major #3 (Code Review 2026-07-03): a DB error on one row (e.g.
+        floor value too long for its column) is isolated to that row via a
+        SAVEPOINT; the remaining rows in the batch still insert successfully
+        and no exception propagates out of bulk_insert_rows.
+        """
+        session = _make_session_mock(existing_row=False)
+        # Row 2's flush raises; rows 1 and 3 flush normally.
+        session.flush = AsyncMock(
+            side_effect=[
+                None,
+                SQLAlchemyError("value too long for type character varying(10)"),
+                None,
+            ]
+        )
+
+        rows = [
+            _make_row(address="台北市信義區松仁路100號"),
+            _make_row(address="台北市信義區松仁路200號", floor="三層,四層,五層" * 10),
+            _make_row(address="台北市信義區松仁路300號"),
+        ]
+
+        inserted, skipped = await bulk_insert_rows(session, rows)
+
+        assert inserted == 2
+        assert skipped == 0
+        assert session.add.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_all_rows_fail_returns_zero_inserted_without_raising(self) -> None:
+        """Every row failing still returns normally (no exception), all skipped
+        from the inserted count.
+        """
+        session = _make_session_mock(existing_row=False)
+        session.flush = AsyncMock(side_effect=SQLAlchemyError("boom"))
+
+        rows = [_make_row(), _make_row(address="another address")]
+
+        inserted, skipped = await bulk_insert_rows(session, rows)
+
         assert inserted == 0
         assert skipped == 0
 

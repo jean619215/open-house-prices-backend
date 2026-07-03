@@ -9,6 +9,7 @@ import logging
 from typing import Any
 
 from sqlalchemy import and_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import Transaction
@@ -66,6 +67,14 @@ async def bulk_insert_rows(
     Each row is checked against the composite dedup key before insertion.
     Duplicate rows are skipped with a debug log message.
 
+    Each insert is wrapped in its own SAVEPOINT (``session.begin_nested``)
+    and flushed immediately. If a single row triggers a DB-level error (e.g.
+    a value too long for its column — common for ``floor`` on multi-building
+    合併交易 rows), only that row is rolled back to the savepoint and skipped;
+    the error is logged with the row's dedup-key fields for troubleshooting,
+    and the remaining rows continue to be processed instead of the whole
+    batch failing.
+
     Args:
         session: Active async database session. The caller is responsible for
             committing or rolling back.
@@ -73,6 +82,8 @@ async def bulk_insert_rows(
 
     Returns:
         A tuple ``(inserted, skipped)`` with counts of new and duplicate rows.
+        Rows that failed to insert due to a DB error are not counted in
+        either total; they are logged and skipped.
 
     """
     inserted = 0
@@ -92,8 +103,24 @@ async def bulk_insert_rows(
             skipped += 1
             continue
 
-        txn = Transaction(**row)
-        session.add(txn)
+        try:
+            async with session.begin_nested():
+                txn = Transaction(**row)
+                session.add(txn)
+                await session.flush()
+        except SQLAlchemyError:
+            logger.error(
+                "單列寫入失敗，略過此列：address=%r, transaction_date=%s, floor=%r, "
+                "area_sqm=%s, price_total=%s",
+                row.get("address"),
+                row.get("transaction_date"),
+                row.get("floor"),
+                row.get("area_sqm"),
+                row.get("price_total"),
+                exc_info=True,
+            )
+            continue
+
         inserted += 1
 
     logger.info("bulk_insert_rows: inserted=%d, skipped=%d", inserted, skipped)

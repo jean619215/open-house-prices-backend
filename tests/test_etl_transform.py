@@ -205,6 +205,13 @@ class TestParseBuildingAge:
         """Input shorter than 3 digits → None."""
         assert parse_building_age("09", 2026) is None
 
+    def test_unknown_sentinel_returns_none(self) -> None:
+        """AC-17: '0000000' (日期不詳 sentinel) must not be parsed as a valid
+        completion date; should return None instead of a false building_age
+        (e.g. completion_year=1911).
+        """
+        assert parse_building_age("0000000", 2026) is None
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # parse_has_parking  (AC-10, AC-18, TC-06, TC-07, TC-12)

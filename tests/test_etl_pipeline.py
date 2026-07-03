@@ -50,6 +50,16 @@ def _make_session_mock() -> AsyncMock:
     session.execute = AsyncMock(return_value=scalar_mock)
     session.add = MagicMock()
     session.commit = AsyncMock()
+    session.flush = AsyncMock()
+
+    def _make_nested() -> AsyncMock:
+        """Build a fresh mock for one ``session.begin_nested()`` call."""
+        nested = AsyncMock()
+        nested.__aenter__ = AsyncMock(return_value=nested)
+        nested.__aexit__ = AsyncMock(return_value=False)
+        return nested
+
+    session.begin_nested = MagicMock(side_effect=_make_nested)
     # Support async context manager
     session.__aenter__ = AsyncMock(return_value=session)
     session.__aexit__ = AsyncMock(return_value=False)

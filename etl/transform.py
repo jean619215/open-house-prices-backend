@@ -134,17 +134,22 @@ def parse_building_age(raw_completion_date: str, current_year: int) -> int | Non
 
     Args:
         raw_completion_date: 7-digit ROC date string, e.g. ``"0920630"``
-            (民國 92 年 6 月 30 日 → completion year 2003).
+            (民國 92 年 6 月 30 日 → completion year 2003). The value
+            ``"0000000"`` is treated as unknown and returns None.
         current_year: The calendar year in which the ETL is executed.
 
     Returns:
         Building age as a non-negative integer, or ``None`` if the input is
-        empty, unparseable, or yields a negative age.
+        empty, unparseable, equals the unknown-date sentinel ``"0000000"``,
+        or yields a negative age.
 
     """
     value = raw_completion_date.strip()
     if not value or len(value) < 3 or not value[:3].isdigit():
         logger.debug("parse_building_age: unparseable value %r → None", raw_completion_date)
+        return None
+    if value == UNKNOWN_DATE_VALUE:
+        logger.debug("parse_building_age: unknown date sentinel %r → None", raw_completion_date)
         return None
     try:
         roc_year = int(value[:3])

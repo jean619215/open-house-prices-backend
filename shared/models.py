@@ -34,8 +34,13 @@ class Transaction(Base):
         district: District name (e.g. 大安區).
         location: PostGIS Point geometry in SRID 4326.
         price_total: Total transaction price in TWD (New Taiwan Dollar).
-        price_per_sqm: Price per ping (坪) in TWD.
-        area_sqm: Building area in ping (坪).
+        price_per_sqm: Unit price per square metre (m²) in TWD, stored as the
+            source raw value (元/平方公尺). No ping (坪) conversion is
+            performed; that is the frontend's responsibility (決策 1,
+            2026-06-22).
+        area_sqm: Building area in square metres (m²), stored as the source
+            raw value. No ping (坪) conversion is performed; that is the
+            frontend's responsibility (決策 1, 2026-06-22).
         floor: Floor description as raw string from 實價登錄 source data.
             Stored as VARCHAR(10) to preserve values like '全', 'B1', 'B全',
             '頂層', '3F', etc. Numeric parsing is deferred to query time.
@@ -43,7 +48,9 @@ class Transaction(Base):
         building_type: Building type description.
         has_parking: Whether a parking space is included.
         mrt_distance: Distance to nearest MRT station in metres.
-        transaction_date: Transaction month stored as the 1st of that month.
+        transaction_date: Full transaction date (ROC date converted to
+            Gregorian, e.g. 民國 1130515 → 2024-05-15), not truncated to
+            the 1st of the month.
         created_at: Record creation timestamp (UTC).
     """
 
