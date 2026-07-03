@@ -1,2 +1,3 @@
 - [TASK-001 Pre-implementation Spec Review](project-task001-review.md) — spec gaps found in DB model types, Alembic async/sync, health timeout, Docker healthcheck config
 - [TASK-002 Test Case Review](project-task002-testcase-review.md) — TC-03 wrong expected values (math errors), AC-07 misleading formula, has_parking 3-state logic conflict, TC-15 dedup key undefined, TC-05 hardcoded year; returned to 需求確認中
+- [TASK-002 Code Review Round 1](project-task002-code-review-round1.md) — models.py docstring stale "ping" unit after 決策1, building_age "0000000" sentinel not excluded, downloader.py untested, batch insert has no per-row isolation; returned to 開發中
